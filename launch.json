@@ -1,1 +1,30 @@
-{"kind":"univ4_hook","hook":{"contract":"WorkGateHook","constructorArgs":["$poolManager","$token","0x363860179149628b6fd73b7e05a6cd102de3a72a"],"permissions":["beforeInitialize","beforeSwap","afterSwap","afterSwapReturnDelta"]},"token":{"contract":"Work","name":"Work","symbol":"WORK","decimals":18},"pool":{"pairedCurrency":"0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127","fee":12500,"tickSpacing":60,"initialPrice":"79228162514264337593543950336"},"notes":"Deploy WorkGateHook by CREATE2 with address & 0x3fff == 0x20c4. Constructor arguments are the chain PoolManager, newly deployed WORK token, and existing WORKERS NFT at 0x363860179149628b6fd73b7e05a6cd102de3a72a. Swaps open at the NFT's tradingOpenAt(); hook fees slide from 50% to the default 2% over 900 seconds. All hook fees are swept permissionlessly to 0xc9eafe33a510a3a3d95a94c4f85adaf6a3ea12a0; only that address can set the standing fee from 0 to 10%. No upgrades. Verify external contracts and Cancun support on the deployment chain; see README.md for assumptions and operations."}
+{
+  "kind": "univ4_hook",
+  "hook": {
+    "contract": "WorkGateHook",
+    "constructorArgs": [
+      "$poolManager",
+      "$token",
+      "0x363860179149628b6fd73b7e05a6cd102de3a72a"
+    ],
+    "permissions": [
+      "beforeInitialize",
+      "beforeSwap",
+      "afterSwap",
+      "afterSwapReturnDelta"
+    ]
+  },
+  "token": {
+    "contract": "Work",
+    "name": "Work",
+    "symbol": "WORK",
+    "decimals": 18
+  },
+  "pool": {
+    "pairedCurrency": "0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127",
+    "fee": 12500,
+    "tickSpacing": 60,
+    "initialPrice": "79228162514264337593543950336"
+  },
+  "notes": "Token: Work (WORK), 18 decimals, OpenZeppelin v5 ERC20 with no constructor arguments; src/Work.sol. Hook: WorkGateHook, src/WorkGateHook.sol, constructor (IPoolManager poolManager, address token, address workers) in that order: the launch chain's PoolManager, the WORK token deployed just before the hook, and the already-deployed WORKERS NFT at 0x363860179149628b6fd73b7e05a6cd102de3a72a, which must expose tradingOpenAt() and must have code (constructor requires it). Permissions: the hook declares beforeInitialize, beforeSwap, afterSwap and afterSwapReturnDelta through Hooks.validateHookPermissions in its constructor (it has no getHookPermissions function), so it must be deployed by CREATE2 at an address whose low 14 bits equal 0x20C4 or construction reverts. Pool: WORK paired with 0x5f7bb59365ce557c26dbcaa4ee9d39a4b95b7127 (not ETH), LP fee 12500 (1.25%), tick spacing 60, initial sqrtPriceX96 79228162514264337593543950336 (2^96, a 1:1 price). beforeInitialize is PoolManager-only and accepts exactly one pool: this pair, fee 12500, tick spacing 60, hooks equal to the hook; any other key or a second initialize reverts. Trading gate: beforeSwap reverts with TradingClosed until the WORKERS NFT's tradingOpenAt() is nonzero and not in the future; the first successful swap latches that timestamp. Hook fee (separate from the LP fee): taken in afterSwap on the unspecified currency as an afterSwapReturnDelta and minted to the hook as PoolManager claim tokens. It is 50% before and at the open timestamp, slides linearly from 50% to the standing fee over the 900 seconds after it, then equals the standing fee (initially 2%). Fee recipient: every hook fee goes to 0xc9eafe33a510a3a3d95a94c4f85adaf6a3ea12a0 via the permissionless sweep(), which burns the hook's claims for both pool currencies and takes them to that address, and also forwards any stray ERC20 or native balance held by the hook. Admin: only 0xc9eafe33a510a3a3d95a94c4f85adaf6a3ea12a0 may call setStandingFee, and only to a value of at most 1000 bps (0-10%). There is no owner, no pause, no upgrade path, no other privileged function, and the fee destination is a constant. Tests in test/ run against the real v4-core PoolManager. Toolchain: solc 0.8.26, evm_version cancun, optimizer 200 runs, via_ir, bytecode_hash none; Uniswap v4-core v4.0.0 at lib/v4-core and OpenZeppelin v5 at lib/openzeppelin-contracts."
+}
